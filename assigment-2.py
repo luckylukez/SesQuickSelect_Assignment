@@ -1,18 +1,18 @@
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 
 # Create data
 T = 10 # nr of arrays
 n = 30000 # size of each array
 
+random.seed(1)
+
 data = []
-for i in range(1,T):
-    row = list(range(1,n))
+for i in range(T):
+    row = list(range(n))
     random.shuffle(row)
     data.append(row)
-data = np.matrix(data)
-
-random.seed(1)
 
 def partition(arr, lo, hi, piv_ind):
     p = arr[piv_ind]
@@ -34,7 +34,12 @@ def partition(arr, lo, hi, piv_ind):
         i -= 1
               
     arr[i], arr[piv_ind] = arr[piv_ind], arr[i]
-    return i
+
+    # Calculate scanned elements
+    n = hi - lo + 1
+    se = n-1
+
+    return i, se
 
 def YBB_partition(arr, lo, hi):
     # p is the left pivot, and q is the right pivot. 
@@ -70,10 +75,15 @@ def YBB_partition(arr, lo, hi):
     arr[lo], arr[j] = arr[j], arr[lo] 
     arr[hi], arr[g] = arr[g], arr[hi] 
 
-    # Returning the indices of the pivots 
-    return j, g
+    # Calculate number of scanned elements
+    n = hi - lo + 1
+    left_partition_size = j-lo-1
+    se = n - 2 + left_partition_size
 
-def sesquickselect(arr, k, lo, hi, v=1/4):
+    # Returning the indices of the pivots 
+    return j, g, se
+
+def sesquickselect(arr, k, lo, hi, scanned_elements=0, v=1/4, recursion_depth=0):
 
     if arr[lo] > arr[hi]: 
         arr[lo], arr[hi] = arr[hi], arr[lo]
@@ -86,16 +96,17 @@ def sesquickselect(arr, k, lo, hi, v=1/4):
     k_ind = k-1
 
     if alpha >= v and alpha <= 1-v:
-        lo_p, hi_p = YBB_partition(arr, lo, hi)
+        lo_p, hi_p, se = YBB_partition(arr, lo, hi)
+        scanned_elements += se
 
         if k_ind == lo_p or k_ind == hi_p:
-            return arr[k_ind]
+            return arr[k_ind], scanned_elements, recursion_depth
         elif k_ind < lo_p:
-            return sesquickselect(arr, k, lo, lo_p-1, v)
+            return sesquickselect(arr, k, lo, lo_p-1, scanned_elements, v, recursion_depth=recursion_depth+1)
         elif k_ind < hi_p:
-            return sesquickselect(arr, k, lo_p+1, hi_p-1, v)
+            return sesquickselect(arr, k, lo_p+1, hi_p-1, scanned_elements, v, recursion_depth=recursion_depth+1)
         else:
-            return sesquickselect(arr, k, hi_p+1, hi, v)
+            return sesquickselect(arr, k, hi_p+1, hi, scanned_elements, v, recursion_depth=recursion_depth+1)
 
 
     else:
@@ -104,25 +115,63 @@ def sesquickselect(arr, k, lo, hi, v=1/4):
         elif alpha > 1-v:
             piv_ind = hi
 
-        p = partition(arr, lo, hi, piv_ind=piv_ind)
+        p, se = partition(arr, lo, hi, piv_ind=piv_ind)
+        scanned_elements += se
 
         if k_ind == p: 
-            return arr[p]
+            return arr[p], scanned_elements, recursion_depth
         elif k_ind < p:
-            return sesquickselect(arr, k, lo, p-1)
+            return sesquickselect(arr, k, lo, p-1, scanned_elements, recursion_depth=recursion_depth+1)
         else:
-            return sesquickselect(arr, k, p+1, hi)
+            return sesquickselect(arr, k, p+1, hi, scanned_elements, recursion_depth=recursion_depth+1)
     
-# Simple test
-for i in range(3):
-    print(i)
-n = 10
-a = list(range(n))
-random.shuffle(a)
-print(a)
-for k in range(1,n+1):
-    random.shuffle(a)
-    print(sesquickselect(a, k, 0,len(a)-1))
+# # Simple test
+# for i in range(3):
+#     print(i)
+# n = 10
+# a = list(range(n))
+# random.shuffle(a)
+# print(a)
+# for k in range(1,n+1):
+#     random.shuffle(a)
+#     se = 0
+#     print(sesquickselect(a, k, 0,len(a)-1, se))
+
+
+I = [j*100 for j in range(1,301)]
+I.insert(0,1)
+print(I)
+print(I[-1])
+x = [i/n for i in I]
+print(x)
+
+# print(data[1:])
+# print(data.shape)
+# print(data[1,:].shape)
+S = []
+
+for i in I[:10]:
+    S_i = 0
+    for t in range(T):
+        ith_smallest, S_i_r, recur_depth = sesquickselect(data[t], i, 0, len(data[t])-1)
+        S_i += S_i_r
+        print(recur_depth)
+    print('S_{} = {}'.format(i,S_i))
+    S.append(S_i)
+
+plt.plot(x[:10],S)
+plt.show()
+plt.savefig('theoretical_se_approx.png')
+
+
+def theoretical_scanned_elements(x):
+    return
+
+
+
+
+
+
 
 
 
