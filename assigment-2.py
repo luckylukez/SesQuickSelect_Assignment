@@ -161,7 +161,7 @@ for i in I[:10]:
 
 plt.plot(x[:10],S)
 plt.show()
-plt.savefig('theoretical_se_approx.png')
+plt.savefig('theoretical_se_approx.png', format='png')
 
 
 def theoretical_scanned_elements(x):
